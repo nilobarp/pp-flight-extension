@@ -21,18 +21,31 @@
       },
       {
         "command": "nestjs-cqrs-navigator.goToHandler",
-        "title": "Go to CQRS Handler"
+        "title": "Go to Handler"
       }
     ],
     "menus": {
       "editor/context": [
         {
+          "submenu": "flight.submenu",
+          "group": "navigation",
+          "when": "editorTextFocus && resourceLangId == typescript"
+        }
+      ],
+      "flight.submenu": [
+        {
           "command": "nestjs-cqrs-navigator.goToHandler",
-          "when": "editorTextFocus && resourceLangId == typescript",
-          "group": "navigation"
+          "group": "navigation",
+          "when": "editorTextFocus && resourceLangId == typescript"
         }
       ]
-    }
+    },
+    "submenus": [
+      {
+        "id": "flight.submenu",
+        "label": "Flight"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
