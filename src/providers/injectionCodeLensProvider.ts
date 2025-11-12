@@ -1,25 +1,22 @@
 import * as vscode from 'vscode';
 
-export class CQRSCodeLensProvider implements vscode.CodeLensProvider {
+export class InjectionCodeLensProvider implements vscode.CodeLensProvider {
     async provideCodeLenses(document: vscode.TextDocument): Promise<vscode.CodeLens[]> {
         const codeLenses: vscode.CodeLens[] = [];
         const text = document.getText();
         
-        // Find all Command, Query, and Event classes
-        const cqrsRegex = /class\s+(\w+(?:Command|Query|Event))\b/g;
+        // Find all @Inject decorators
+        const injectRegex = /@Inject\(([\w_]+)\)/g;
         let match;
         
-        while ((match = cqrsRegex.exec(text)) !== null) {
-            const className = match[1];
+        while ((match = injectRegex.exec(text)) !== null) {
+            const token = match[1];
             const position = document.positionAt(match.index);
             const range = new vscode.Range(position, position);
             
-            // Determine handler type based on class suffix
-            const handlerSuffix = className.endsWith('Event') ? 'Subscriber' : 'Handler';
-            
             const codeLens = new vscode.CodeLens(range, {
-                title: `→ Go to ${className}${handlerSuffix}`,
-                command: 'nestjs-cqrs-navigator.goToHandler',
+                title: `→ Go to provider of ${token}`,
+                command: 'nestjs-cqrs-navigator.goToProvider',
                 arguments: []
             });
             

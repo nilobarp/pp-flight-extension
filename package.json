@@ -1,8 +1,8 @@
 {
   "name": "flight",
   "displayName": "Flight",
-  "description": "",
-  "version": "0.0.1",
+  "description": "Navigate NestJS CQRS patterns and Cucumber BDD scenarios with ease",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.105.0"
   },
@@ -10,7 +10,8 @@
     "Other"
   ],
   "activationEvents": [
-    "onLanguage:typescript"
+    "onLanguage:typescript",
+    "onLanguage:feature"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -22,6 +23,14 @@
       {
         "command": "nestjs-cqrs-navigator.goToHandler",
         "title": "Go to Handler"
+      },
+      {
+        "command": "nestjs-cqrs-navigator.goToProvider",
+        "title": "Go to Provider Implementation"
+      },
+      {
+        "command": "nestjs-cqrs-navigator.goToStepDefinition",
+        "title": "Go to Step Definition"
       }
     ],
     "menus": {
@@ -30,6 +39,11 @@
           "submenu": "flight.submenu",
           "group": "navigation",
           "when": "editorTextFocus && resourceLangId == typescript"
+        },
+        {
+          "submenu": "flight.submenu",
+          "group": "navigation",
+          "when": "editorTextFocus && resourceExtname == .feature"
         }
       ],
       "flight.submenu": [
@@ -37,13 +51,23 @@
           "command": "nestjs-cqrs-navigator.goToHandler",
           "group": "navigation",
           "when": "editorTextFocus && resourceLangId == typescript"
+        },
+        {
+          "command": "nestjs-cqrs-navigator.goToProvider",
+          "group": "navigation",
+          "when": "editorTextFocus && resourceLangId == typescript"
+        },
+        {
+          "command": "nestjs-cqrs-navigator.goToStepDefinition",
+          "group": "navigation",
+          "when": "editorTextFocus && resourceExtname == .feature"
         }
       ]
     },
     "submenus": [
       {
         "id": "flight.submenu",
-        "label": "Flight"
+        "label": "Fly to..."
       }
     ]
   },
@@ -53,16 +77,18 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "package": "echo \"y\" | npx vsce package --allow-missing-repository"
   },
   "devDependencies": {
-    "@types/vscode": "^1.105.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "typescript-eslint": "^8.46.3",
+    "@types/vscode": "^1.105.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.0",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "typescript-eslint": "^8.46.3"
   }
 }

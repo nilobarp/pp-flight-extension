@@ -60,8 +60,11 @@ export class HandlerFinder {
             const patterns = [
                 '**/*handler*.ts',
                 '**/*handlers*.ts',
+                '**/*subscriber*.ts',
+                '**/*subscribers*.ts',
                 '**/commands/**/*.ts',
                 '**/queries/**/*.ts',
+                '**/events/**/*.ts',
                 '**/cqrs/**/*.ts',
             ];
 
@@ -83,8 +86,10 @@ export class HandlerFinder {
                     const decoratorPatterns = [
                         `@CommandHandler(${commandName})`,
                         `@QueryHandler(${commandName})`,
+                        `@EventsHandler(${commandName})`,
                         `@CommandHandler( ${commandName} )`,
                         `@QueryHandler( ${commandName} )`,
+                        `@EventsHandler( ${commandName} )`,
                     ];
                     
                     let foundDecorator = false;
@@ -144,7 +149,9 @@ export class HandlerFinder {
         const patterns = [
             `**/${fileName}.ts`,
             `**/${fileName}.handler.ts`,
+            `**/${fileName}.subscriber.ts`,
             `**/handlers/${fileName}.ts`,
+            `**/subscribers/${fileName}.ts`,
             `**/*${handlerName}*.ts`
         ];
 

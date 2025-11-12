@@ -1,51 +1,64 @@
-# flight README
+# Flight
 
-This is the README for your extension "flight". After writing up a brief description, we recommend including the following sections.
+A VS Code extension for navigating NestJS CQRS patterns, dependency injection, and Cucumber test scenarios.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+### NestJS Navigation
+- **Go to Handler**: Navigate from commands, queries, and events to their handlers/subscribers
+- **Go to Provider**: Navigate to provider implementations from injection points
+- Code lens integration for quick navigation in TypeScript files
 
-For example if there is an image subfolder under your extension project workspace:
+### Cucumber/BDD Navigation
+- **Go to Step Definition**: Navigate from Gherkin steps in `.feature` files to their TypeScript step definitions
+- **Flexible matching**: Works regardless of whether step is defined with `@given`, `@when`, or `@then` - they're interchangeable
+- **Smart pattern recognition**: Handles regex patterns, parameterized steps (`{}`), and exact string matches
+- **Table-aware**: Supports steps with DataTable arguments (steps ending with `:`)
+- Code lens integration on every step for instant navigation
 
-\!\[feature X\]\(images/feature-x.png\)
+## Usage
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+### NestJS CQRS & DI
+Right-click in any TypeScript file to access Flight commands via the context menu:
+- **Go to Handler**: Jump from a Command/Query/Event class to its handler or subscriber
+- **Go to Provider Implementation**: Navigate to provider definitions from injection points
+
+### Cucumber Features
+Open any `.feature` file and:
+- Click the "→ Go to step definition" code lens above any Given/When/Then step
+- Right-click on a step line and select "Go to Step Definition" from the Flight menu
+- Automatically finds matching step definitions in your step files
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- VS Code 1.105.0 or higher
+- TypeScript project (for NestJS features)
+- Cucumber-js with cucumber-tsflow (for BDD features)
 
-## Extension Settings
+## Supported Patterns
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- NestJS `@CommandHandler`, `@QueryHandler`, `@EventsHandler` decorators
+- NestJS dependency injection via `@Inject()` and constructor parameters
+- Cucumber-tsflow `@given()`, `@when()`, `@then()`, `@binding()` decorators
+- Gherkin `.feature` files with Given/When/Then/And/But steps
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.1.0
 
-### 1.0.0
+Enhanced Cucumber step matching:
+- **Flexible keyword matching**: Steps can now be defined with any keyword (Given/When/Then) and matched regardless of which keyword is used in the feature file
+- **Improved regex pattern matching**: Better support for parameterized steps with `{}` placeholders, capture groups, and regex patterns
+- **Smart scoring**: Prioritizes exact matches over parameterized matches for more accurate navigation
+- **Table support**: Properly handles steps with trailing colons that have DataTable arguments
+- **Better error handling**: Graceful fallback to substring matching when regex patterns are complex
 
-Initial release of ...
+### 0.0.1
 
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+Initial release of Flight extension with support for:
+- NestJS CQRS navigation (commands, queries, events)
+- NestJS dependency injection navigation
+- Cucumber/BDD step definition navigation
 
 ---
 

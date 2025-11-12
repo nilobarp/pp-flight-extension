@@ -24,18 +24,20 @@ export function registerGoToHandlerCommand(context: vscode.ExtensionContext): vo
 
             const word = document.getText(wordRange);
             
-            // Check if it's a Command or Query class
+            // Check if it's a Command, Query, or Event class
             const isCommand = word.endsWith('Command');
             const isQuery = word.endsWith('Query');
+            const isEvent = word.endsWith('Event');
             
-            if (!isCommand && !isQuery) {
-                vscode.window.showInformationMessage('Cursor is not on a Command or Query class');
+            if (!isCommand && !isQuery && !isEvent) {
+                vscode.window.showInformationMessage('Cursor is not on a Command, Query, or Event class');
                 return;
             }
 
-            // Derive handler name from command/query name
-            const handlerName = `${word}Handler`;
-            const type = isCommand ? 'Command' : 'Query';
+            // Derive handler name from command/query/event name
+            // Events can have multiple subscribers, so we search for any handler
+            const handlerName = isEvent ? `${word}Subscriber` : `${word}Handler`;
+            const type = isCommand ? 'Command' : isQuery ? 'Query' : 'Event';
             
             // Search for the handler
             const handlerLocation = await handlerFinder.findHandler(handlerName, word);
