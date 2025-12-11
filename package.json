@@ -2,7 +2,7 @@
   "name": "flight",
   "displayName": "Flight",
   "description": "Navigate NestJS CQRS patterns and Cucumber BDD scenarios with ease",
-  "version": "0.1.0",
+  "version": "0.2.3",
   "engines": {
     "vscode": "^1.105.0"
   },
@@ -31,6 +31,14 @@
       {
         "command": "nestjs-cqrs-navigator.goToStepDefinition",
         "title": "Go to Step Definition"
+      },
+      {
+        "command": "flight.runScenario",
+        "title": "Run Cucumber Scenario"
+      },
+      {
+        "command": "flight.debugScenario",
+        "title": "Debug Cucumber Scenario"
       }
     ],
     "menus": {

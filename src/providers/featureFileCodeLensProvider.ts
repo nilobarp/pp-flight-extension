@@ -14,6 +14,31 @@ export class FeatureFileCodeLensProvider implements vscode.CodeLensProvider {
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
+            const trimmedLine = line.trim();
+            
+            // Add run button for Scenario lines
+            const scenarioMatch = trimmedLine.match(/^Scenario:\s*(.+)/);
+            if (scenarioMatch) {
+                const position = new vscode.Position(i, 0);
+                const range = new vscode.Range(position, position);
+
+                // Add "Run" button
+                const runCodeLens = new vscode.CodeLens(range, {
+                    title: '▶ Run',
+                    command: 'flight.runScenario',
+                    arguments: [document, i]
+                });
+                codeLenses.push(runCodeLens);
+
+                // Add "Debug" button
+                const debugCodeLens = new vscode.CodeLens(range, {
+                    title: '🐛 Debug',
+                    command: 'flight.debugScenario',
+                    arguments: [document, i]
+                });
+                codeLenses.push(debugCodeLens);
+            }
+            
             const stepInfo = StepDefinitionFinder.extractStepText(line);
 
             if (stepInfo) {

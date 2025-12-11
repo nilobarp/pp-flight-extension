@@ -7,6 +7,8 @@ import { FeatureFileCodeLensProvider } from './providers/featureFileCodeLensProv
 import { registerGoToHandlerCommand } from './commands/goToHandler';
 import { registerGoToProviderCommand } from './commands/goToProvider';
 import { registerGoToStepDefinitionCommand } from './commands/goToStepDefinition';
+import { CucumberTestController } from './test/cucumberTestController';
+import { registerRunScenarioCommand, registerDebugScenarioCommand } from './commands/runScenario';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -18,6 +20,9 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Hello World from Flight!');
 	});
 	context.subscriptions.push(disposable);
+    
+    // Initialize Cucumber Test Controller
+    const testController = new CucumberTestController(context);
     
     // Register CodeLens providers
     const cqrsCodeLensProvider = new CQRSCodeLensProvider();
@@ -48,6 +53,8 @@ export function activate(context: vscode.ExtensionContext) {
     registerGoToHandlerCommand(context);
     registerGoToProviderCommand(context);
     registerGoToStepDefinitionCommand(context);
+    registerRunScenarioCommand(context, testController);
+    registerDebugScenarioCommand(context, testController);
 }
 
 // This method is called when your extension is deactivated
