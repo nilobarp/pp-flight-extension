@@ -1,0 +1,111 @@
+name: Release Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 0.3.0)'
+        required: true
+        type: string
+
+jobs:
+  validate-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - name: Validate version
+        id: validate
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          NEW_VERSION="${{ inputs.version }}"
+          
+          echo "Current version: $CURRENT_VERSION"
+          echo "New version: $NEW_VERSION"
+          
+          # Function to compare semantic versions
+          version_gt() {
+            test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"
+          }
+          
+          if version_gt "$CURRENT_VERSION" "$NEW_VERSION"; then
+            echo "Error: New version ($NEW_VERSION) must be greater than current version ($CURRENT_VERSION)"
+            exit 1
+          fi
+          
+          if [ "$CURRENT_VERSION" = "$NEW_VERSION" ]; then
+            echo "Error: New version ($NEW_VERSION) must be greater than current version ($CURRENT_VERSION)"
+            exit 1
+          fi
+          
+          echo "Version validation passed"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Update package.json version
+        run: |
+          npm version ${{ steps.validate.outputs.new_version }} --no-git-tag-version
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Compile extension
+        run: npm run compile
+      
+      - name: Package extension
+        run: npm run package
+      
+      - name: Get VSIX filename
+        id: vsix
+        run: |
+          VSIX_FILE=$(ls flight-${{ steps.validate.outputs.new_version }}.vsix)
+          echo "filename=$VSIX_FILE" >> $GITHUB_OUTPUT
+          echo "Found VSIX: $VSIX_FILE"
+      
+      - name: Commit version bump
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add package.json package-lock.json
+          git commit -m "chore: bump version to ${{ steps.validate.outputs.new_version }}"
+          git push
+      
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.validate.outputs.new_version }}
+          release_name: Flight v${{ steps.validate.outputs.new_version }}
+          body: |
+            Flight extension version ${{ steps.validate.outputs.new_version }}
+            
+            ## Installation
+            Download the `.vsix` file below and install it in VS Code:
+            1. Open VS Code
+            2. Go to Extensions view (Ctrl+Shift+X / Cmd+Shift+X)
+            3. Click the "..." menu at the top of the Extensions view
+            4. Select "Install from VSIX..."
+            5. Choose the downloaded `.vsix` file
+          draft: false
+          prerelease: false
+      
+      - name: Upload VSIX to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ steps.vsix.outputs.filename }}
+          asset_name: ${{ steps.vsix.outputs.filename }}
+          asset_content_type: application/vsix
