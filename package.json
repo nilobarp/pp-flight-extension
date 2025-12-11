@@ -2,7 +2,7 @@
   "name": "flight",
   "displayName": "Flight",
   "description": "Navigate NestJS CQRS patterns and Cucumber BDD scenarios with ease",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "engines": {
     "vscode": "^1.105.0"
   },
@@ -87,7 +87,10 @@
       "properties": {
         "flight.cucumber.profiles": {
           "type": "array",
-          "default": ["cqrs", "api"],
+          "default": [
+            "cqrs",
+            "api"
+          ],
           "description": "List of Cucumber profiles to organize tests by. Tests will be grouped under these profiles in the Test Explorer.",
           "items": {
             "type": "string"
