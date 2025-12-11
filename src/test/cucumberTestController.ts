@@ -69,6 +69,7 @@ export class CucumberTestController {
         const existingItem = this.testItemsMap.get(fileId);
         if (existingItem) {
             this.testController.items.delete(existingItem.id);
+            this.testItemsMap.delete(fileId);
         }
 
         const text = document.getText();
@@ -76,14 +77,28 @@ export class CucumberTestController {
         
         let featureName = 'Unknown Feature';
         let featureItem: vscode.TestItem | undefined;
+        let featureTags: string[] = [];
+        let currentTags: string[] = [];
+        let foundFeature = false;
         
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
             
+            // Match tags (lines starting with @)
+            if (line.startsWith('@')) {
+                const tags = line.split(/\s+/).filter(t => t.startsWith('@')).map(t => t.substring(1));
+                currentTags.push(...tags);
+                continue;
+            }
+            
             // Match Feature:
             const featureMatch = line.match(/^Feature:\s*(.+)/);
-            if (featureMatch) {
+            if (featureMatch && !foundFeature) {
                 featureName = featureMatch[1];
+                featureTags = [...currentTags];
+                currentTags = [];
+                foundFeature = true;
+                
                 const featureId = `${fileId}`;
                 featureItem = this.testController.createTestItem(
                     featureId,
@@ -93,22 +108,54 @@ export class CucumberTestController {
                 featureItem.range = new vscode.Range(i, 0, i, line.length);
                 this.testController.items.add(featureItem);
                 this.testItemsMap.set(fileId, featureItem);
+                continue;
             }
             
             // Match Scenario:
             const scenarioMatch = line.match(/^Scenario:\s*(.+)/);
             if (scenarioMatch && featureItem) {
                 const scenarioName = scenarioMatch[1];
-                const scenarioId = `${fileId}:${i}`;
-                const scenarioItem = this.testController.createTestItem(
-                    scenarioId,
-                    scenarioName,
-                    uri
+                // Combine feature tags with scenario-specific tags
+                const allTags = [...new Set([...featureTags, ...currentTags])];
+                
+                // Get configured profiles
+                const config = vscode.workspace.getConfiguration('flight.cucumber');
+                const profiles: string[] = config.get('profiles', ['cqrs', 'api']);
+                
+                // Find matching profiles for this scenario
+                const matchingProfiles = profiles.filter(profile => 
+                    allTags.includes(profile)
                 );
-                scenarioItem.range = new vscode.Range(i, 0, i, line.length);
-                // Store scenario name in description for later retrieval
-                scenarioItem.description = scenarioName;
-                featureItem.children.add(scenarioItem);
+                
+                // Add scenario under each matching profile
+                for (const profile of matchingProfiles) {
+                    // Get or create profile item
+                    const profileId = `${fileId}:profile:${profile}`;
+                    let profileItem = featureItem.children.get(profileId);
+                    
+                    if (!profileItem) {
+                        profileItem = this.testController.createTestItem(
+                            profileId,
+                            `@${profile}`,
+                            uri
+                        );
+                        featureItem.children.add(profileItem);
+                    }
+                    
+                    // Create scenario item under profile
+                    const scenarioId = `${fileId}:${profile}:${i}`;
+                    const scenarioItem = this.testController.createTestItem(
+                        scenarioId,
+                        scenarioName,
+                        uri
+                    );
+                    scenarioItem.range = new vscode.Range(i, 0, i, line.length);
+                    // Store the profile for later retrieval
+                    scenarioItem.description = profile;
+                    profileItem.children.add(scenarioItem);
+                }
+                
+                currentTags = [];
             }
         }
     }
@@ -133,9 +180,9 @@ export class CucumberTestController {
             }
 
             if (test.children.size > 0) {
-                // This is a feature file, run all scenarios
-                test.children.forEach(scenario => {
-                    queue.push(scenario);
+                // This is a feature or profile, run all children
+                test.children.forEach(child => {
+                    queue.push(child);
                 });
             } else {
                 // This is a scenario, run it
@@ -182,8 +229,9 @@ export class CucumberTestController {
                 return;
             }
 
-            // Get scenario name from test label
+            // Get scenario name from test label and profile from description
             const scenarioName = test.label;
+            const profile = test.description || 'cqrs';
 
             // Find closest package.json folder
             const cwd = await this.findClosestPackageJsonFolder(uri);
@@ -192,11 +240,11 @@ export class CucumberTestController {
                 return;
             }
 
-            // Run cucumber command with scenario name
-            run.appendOutput(`Running: npx cucumber-js -p cqrs --name="${scenarioName}"\r\n`);
+            // Run cucumber command with scenario name and profile
+            run.appendOutput(`Running: npx cucumber-js -p ${profile} --name="${scenarioName}"\r\n`);
             run.appendOutput(`From directory: ${cwd}\r\n`);
             
-            const result = await this.executeCucumber(cwd, scenarioName);
+            const result = await this.executeCucumber(cwd, scenarioName, profile);
             
             if (result.exitCode === 0) {
                 run.appendOutput(`✓ Scenario passed\r\n`);
@@ -213,7 +261,7 @@ export class CucumberTestController {
         }
     }
 
-    private executeCucumber(cwd: string, scenarioName: string): Promise<{
+    private executeCucumber(cwd: string, scenarioName: string, profile: string): Promise<{
         exitCode: number;
         stdout: string;
         stderr: string;
@@ -227,7 +275,7 @@ export class CucumberTestController {
             // Cucumber's --name option uses regex, so we need to escape regex special chars
             const escapedScenarioName = scenarioName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-            const process = spawn('npx', ['cucumber-js', '-p', 'cqrs', '--name', escapedScenarioName], {
+            const process = spawn('npx', ['cucumber-js', '-p', profile, '--name', escapedScenarioName], {
                 cwd: cwd,
                 shell: false
             });
@@ -260,18 +308,24 @@ export class CucumberTestController {
         });
     }
 
-    public async runScenarioAtLine(document: vscode.TextDocument, line: number): Promise<void> {
-        // Find the test item for this scenario
+    public async runScenarioAtLine(document: vscode.TextDocument, line: number, profile?: string): Promise<void> {
         const fileId = this.getFileId(document.uri);
-        const scenarioId = `${fileId}:${line}`;
         
-        // Search for the test item
+        // Get profile from parameter or use default from configuration
+        const config = vscode.workspace.getConfiguration('flight.cucumber');
+        const profileToUse = profile || config.get('defaultProfile', 'cqrs');
+        
+        // Search for the test item for this scenario with the specified profile
         let testItem: vscode.TestItem | undefined;
         this.testController.items.forEach(item => {
-            item.children.forEach(child => {
-                if (child.id === scenarioId) {
-                    testItem = child;
-                }
+            item.children.forEach(profileItem => {
+                profileItem.children.forEach(child => {
+                    if (child.uri?.fsPath === document.uri.fsPath && 
+                        child.range?.start.line === line &&
+                        child.description === profileToUse) {
+                        testItem = child;
+                    }
+                });
             });
         });
 
@@ -281,10 +335,14 @@ export class CucumberTestController {
             
             // Try again
             this.testController.items.forEach(item => {
-                item.children.forEach(child => {
-                    if (child.id === scenarioId) {
-                        testItem = child;
-                    }
+                item.children.forEach(profileItem => {
+                    profileItem.children.forEach(child => {
+                        if (child.uri?.fsPath === document.uri.fsPath && 
+                            child.range?.start.line === line &&
+                            child.description === profileToUse) {
+                            testItem = child;
+                        }
+                    });
                 });
             });
         }

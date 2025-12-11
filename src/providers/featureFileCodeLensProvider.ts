@@ -11,32 +11,58 @@ export class FeatureFileCodeLensProvider implements vscode.CodeLensProvider {
         const codeLenses: vscode.CodeLens[] = [];
         const text = document.getText();
         const lines = text.split('\n');
+        
+        // Get configured profiles
+        const config = vscode.workspace.getConfiguration('flight.cucumber');
+        const profiles: string[] = config.get('profiles', ['cqrs', 'api']);
+        
+        let featureTags: string[] = [];
+        let currentTags: string[] = [];
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const trimmedLine = line.trim();
             
-            // Add run button for Scenario lines
+            // Match tags (lines starting with @)
+            if (trimmedLine.startsWith('@')) {
+                const tags = trimmedLine.split(/\s+/).filter(t => t.startsWith('@')).map(t => t.substring(1));
+                currentTags.push(...tags);
+                continue;
+            }
+            
+            // Track feature-level tags
+            const featureMatch = trimmedLine.match(/^Feature:\s*(.+)/);
+            if (featureMatch) {
+                featureTags = [...currentTags];
+                currentTags = [];
+                continue;
+            }
+            
+            // Add run buttons for Scenario lines
             const scenarioMatch = trimmedLine.match(/^Scenario:\s*(.+)/);
             if (scenarioMatch) {
                 const position = new vscode.Position(i, 0);
                 const range = new vscode.Range(position, position);
-
-                // Add "Run" button
-                const runCodeLens = new vscode.CodeLens(range, {
-                    title: '▶ Run',
-                    command: 'flight.runScenario',
-                    arguments: [document, i]
-                });
-                codeLenses.push(runCodeLens);
-
-                // Add "Debug" button
-                const debugCodeLens = new vscode.CodeLens(range, {
-                    title: '🐛 Debug',
-                    command: 'flight.debugScenario',
-                    arguments: [document, i]
-                });
-                codeLenses.push(debugCodeLens);
+                
+                // Determine which tags apply to this scenario
+                const scenarioTags = featureTags.length > 0 ? featureTags : currentTags;
+                
+                // Find matching profiles for this scenario
+                const matchingProfiles = profiles.filter(profile => 
+                    scenarioTags.includes(profile)
+                );
+                
+                // Create a run button for each matching profile
+                for (const profile of matchingProfiles) {
+                    const runCodeLens = new vscode.CodeLens(range, {
+                        title: `▶ Run @${profile}`,
+                        command: 'flight.runScenarioWithProfile',
+                        arguments: [document, i, profile]
+                    });
+                    codeLenses.push(runCodeLens);
+                }
+                
+                currentTags = [];
             }
             
             const stepInfo = StepDefinitionFinder.extractStepText(line);

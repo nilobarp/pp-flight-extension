@@ -2,7 +2,7 @@
   "name": "flight",
   "displayName": "Flight",
   "description": "Navigate NestJS CQRS patterns and Cucumber BDD scenarios with ease",
-  "version": "0.2.3",
+  "version": "0.2.7",
   "engines": {
     "vscode": "^1.105.0"
   },
@@ -35,6 +35,10 @@
       {
         "command": "flight.runScenario",
         "title": "Run Cucumber Scenario"
+      },
+      {
+        "command": "flight.runScenarioWithProfile",
+        "title": "Run Cucumber Scenario with Profile"
       },
       {
         "command": "flight.debugScenario",
@@ -77,7 +81,25 @@
         "id": "flight.submenu",
         "label": "Fly to..."
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Flight",
+      "properties": {
+        "flight.cucumber.profiles": {
+          "type": "array",
+          "default": ["cqrs", "api"],
+          "description": "List of Cucumber profiles to organize tests by. Tests will be grouped under these profiles in the Test Explorer.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "flight.cucumber.defaultProfile": {
+          "type": "string",
+          "default": "cqrs",
+          "description": "Default Cucumber profile to use when running tests from CodeLens buttons."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

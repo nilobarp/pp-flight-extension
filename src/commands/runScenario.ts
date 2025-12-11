@@ -12,6 +12,15 @@ export function registerRunScenarioCommand(
         }
     );
     context.subscriptions.push(runScenarioCommand);
+    
+    // New command for running with specific profile
+    const runScenarioWithProfileCommand = vscode.commands.registerCommand(
+        'flight.runScenarioWithProfile',
+        async (document: vscode.TextDocument, line: number, profile: string) => {
+            await testController.runScenarioAtLine(document, line, profile);
+        }
+    );
+    context.subscriptions.push(runScenarioWithProfileCommand);
 }
 
 export function registerDebugScenarioCommand(
@@ -43,6 +52,10 @@ export function registerDebugScenarioCommand(
             
             const scenarioName = scenarioMatch[1];
 
+            // Get default profile from configuration
+            const config = vscode.workspace.getConfiguration('flight.cucumber');
+            const defaultProfile = config.get('defaultProfile', 'cqrs');
+
             // Escape special characters in scenario name for regex matching
             // Cucumber's --name option uses regex, so we need to escape regex special chars
             const escapedScenarioName = scenarioName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -70,7 +83,7 @@ export function registerDebugScenarioCommand(
                 request: 'launch',
                 name: `Debug Scenario: ${scenarioName}`,
                 program: '${workspaceFolder}/node_modules/.bin/cucumber-js',
-                args: ['-p', 'cqrs', '--name', escapedScenarioName],
+                args: ['-p', defaultProfile, '--name', escapedScenarioName],
                 cwd: packageJsonDir,
                 console: 'integratedTerminal',
                 internalConsoleOptions: 'neverOpen'
