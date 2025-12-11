@@ -2,7 +2,7 @@
   "name": "flight",
   "displayName": "Flight",
   "description": "Navigate NestJS CQRS patterns and Cucumber BDD scenarios with ease",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "engines": {
     "vscode": "^1.105.0"
   },
